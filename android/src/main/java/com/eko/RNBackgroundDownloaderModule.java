@@ -54,10 +54,13 @@ import com.google.gson.reflect.TypeToken;
 
 public class RNBackgroundDownloaderModule extends ReactContextBaseJavaModule {
 
-  private static final int TASK_RUNNING = 0;
-  private static final int TASK_SUSPENDED = 1;
-  private static final int TASK_CANCELING = 2;
-  private static final int TASK_COMPLETED = 3;
+  public static final String NAME = "RNBackgroundDownloader";
+
+  // Constants for task states
+  public static final int TASK_RUNNING = 0;
+  public static final int TASK_SUSPENDED = 1;
+  public static final int TASK_CANCELING = 2;
+  public static final int TASK_COMPLETED = 3;
 
   private static final int ERR_STORAGE_FULL = 0;
   private static final int ERR_NO_INTERNET = 1;
@@ -104,7 +107,7 @@ public class RNBackgroundDownloaderModule extends ReactContextBaseJavaModule {
   @NonNull
   @Override
   public String getName() {
-    return "RNBackgroundDownloader";
+    return NAME;
   }
 
   @Nullable

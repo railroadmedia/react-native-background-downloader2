@@ -12,22 +12,44 @@
 #define DLog( s, ... )
 #endif
 
+// Define a private interface that includes the original functionality
+@interface RNBackgroundDownloader () <NSURLSessionDelegate, NSURLSessionDownloadDelegate>
+
+@property (nonatomic, strong) MMKV *mmkv;
+@property (nonatomic, strong) NSURLSession *urlSession;
+@property (nonatomic, strong) NSURLSessionConfiguration *sessionConfig;
+@property (nonatomic, strong) NSNumber *sharedLock;
+@property (nonatomic, strong) NSMutableDictionary<NSNumber *, RNBGDTaskConfig *> *taskToConfigMap;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSURLSessionDownloadTask *> *idToTaskMap;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSData *> *idToResumeDataMap;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *idToPercentMap;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSDictionary *> *progressReports;
+@property (nonatomic, assign) float progressInterval;
+@property (nonatomic, strong) NSDate *lastProgressReportedAt;
+@property (nonatomic, assign) BOOL isBridgeListenerInited;
+@property (nonatomic, assign) BOOL isJavascriptLoaded;
+
+@end
+
+// Define completion handler type
+typedef void (^CompletionHandler)();
 static CompletionHandler storedCompletionHandler;
 
-@implementation RNBackgroundDownloader {
-    MMKV *mmkv;
-    NSURLSession *urlSession;
-    NSURLSessionConfiguration *sessionConfig;
-    NSNumber *sharedLock;
-    NSMutableDictionary<NSNumber *, RNBGDTaskConfig *> *taskToConfigMap;
-    NSMutableDictionary<NSString *, NSURLSessionDownloadTask *> *idToTaskMap;
-    NSMutableDictionary<NSString *, NSData *> *idToResumeDataMap;
-    NSMutableDictionary<NSString *, NSNumber *> *idToPercentMap;
-    NSMutableDictionary<NSString *, NSDictionary *> *progressReports;
-    float progressInterval;
-    NSDate *lastProgressReportedAt;
-    BOOL isBridgeListenerInited;
-    BOOL isJavascriptLoaded;
+@implementation RNBackgroundDownloader
+
+// Expose TaskRunning constants
+- (NSInteger)TaskRunning { return 0; }
+- (NSInteger)TaskSuspended { return 1; }
+- (NSInteger)TaskCanceling { return 2; }
+- (NSInteger)TaskCompleted { return 3; }
+
+// Expose documents directory
+- (NSString *)documents {
+    return [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+}
+
++ (void)setCompletionHandlerWithIdentifier:(NSString *)identifier completionHandler:(CompletionHandler)completionHandler {
+    storedCompletionHandler = completionHandler;
 }
 
 RCT_EXPORT_MODULE();
@@ -504,15 +526,6 @@ RCT_EXPORT_METHOD(checkForExistingDownloads: (RCTPromiseResolveBlock)resolve rej
     DLog(@"[RNBackgroundDownloader] - [URLSessionDidFinishEventsForBackgroundURLSession]");
 }
 
-+ (void)setCompletionHandlerWithIdentifier: (NSString *)identifier completionHandler: (CompletionHandler)completionHandler {
-    DLog(@"[RNBackgroundDownloader] - [setCompletionHandlerWithIdentifier]");
-    NSString *bundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
-    NSString *sessionIdentifier = [bundleIdentifier stringByAppendingString:@".backgrounddownloadtask"];
-    if ([sessionIdentifier isEqualToString:identifier]) {
-        storedCompletionHandler = completionHandler;
-    }
-}
-
 - (NSError *)getServerError: (nonnull NSURLSessionDownloadTask *)downloadTask {
     DLog(@"[RNBackgroundDownloader] - [getServerError]");
     NSError *serverError;
@@ -625,6 +638,49 @@ RCT_EXPORT_METHOD(checkForExistingDownloads: (RCTPromiseResolveBlock)resolve rej
     }
 
     return path;
+}
+
+// Add methods for TurboModule compatibility
+- (void)checkForExistingDownloadsWithResolver:(void (^)(NSArray *))resolve rejecter:(void (^)(NSString *, NSString *, NSError *))reject {
+    // Use the original implementation, but through private API
+    [self checkForExistingDownloads:^(id result) {
+        resolve(result);
+    } reject:^(NSString *code, NSString *message, NSError *error) {
+        reject(code, message, error);
+    }];
+}
+
+- (void)downloadWithOptions:(NSDictionary *)options {
+    // Call the original RCT method
+    // Convert options to the format expected by the original method
+    [self download:options];
+}
+
+- (void)pauseTaskWithId:(NSString *)taskId {
+    [self pauseTask:taskId];
+}
+
+- (void)resumeTaskWithId:(NSString *)taskId {
+    [self resumeTask:taskId];
+}
+
+- (void)stopTaskWithId:(NSString *)taskId {
+    [self stopTask:taskId];
+}
+
+- (void)completeHandlerWithJobId:(NSString *)jobId {
+    [self completeHandler:jobId];
+}
+
+// Add the implementation for addListener and removeListeners methods
+- (void)addListener:(NSString *)eventName {
+    // Required for RCTEventEmitter
+    // This method is called when the first listener is added
+}
+
+- (void)removeListeners:(NSInteger)count {
+    // Required for RCTEventEmitter
+    // This method is called when the last listener is removed
 }
 
 @end

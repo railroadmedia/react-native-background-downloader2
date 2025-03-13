@@ -1,8 +1,8 @@
-import { NativeModules, NativeEventEmitter } from 'react-native'
 import DownloadTask from './lib/DownloadTask'
+import NativeRNBackgroundDownloader from './js/NativeRNBackgroundDownloader'
+import NativeBGDownloaderEventEmitter from './js/NativeBGDownloaderEventEmitter'
 
-const { RNBackgroundDownloader } = NativeModules
-const RNBackgroundDownloaderEmitter = new NativeEventEmitter(RNBackgroundDownloader)
+const RNBackgroundDownloaderEmitter = NativeBGDownloaderEventEmitter
 
 const MIN_PROGRESS_INTERVAL = 250
 const tasksMap = new Map()
@@ -64,7 +64,7 @@ export function setConfig ({ headers, progressInterval, isLogsEnabled }) {
 
 export function checkForExistingDownloads () {
   log('[RNBackgroundDownloader] checkForExistingDownloads-1')
-  return RNBackgroundDownloader.checkForExistingDownloads()
+  return NativeRNBackgroundDownloader.checkForExistingDownloads()
     .then(foundTasks => {
       log('[RNBackgroundDownloader] checkForExistingDownloads-2', foundTasks)
       return foundTasks.map(taskInfo => {
@@ -72,14 +72,14 @@ export function checkForExistingDownloads () {
         const task = new DownloadTask(taskInfo, tasksMap.get(taskInfo.id))
         log('[RNBackgroundDownloader] checkForExistingDownloads-3', taskInfo)
 
-        if (taskInfo.state === RNBackgroundDownloader.TaskRunning) {
+        if (taskInfo.state === NativeRNBackgroundDownloader.TaskRunning) {
           task.state = 'DOWNLOADING'
-        } else if (taskInfo.state === RNBackgroundDownloader.TaskSuspended) {
+        } else if (taskInfo.state === NativeRNBackgroundDownloader.TaskSuspended) {
           task.state = 'PAUSED'
-        } else if (taskInfo.state === RNBackgroundDownloader.TaskCanceling) {
+        } else if (taskInfo.state === NativeRNBackgroundDownloader.TaskCanceling) {
           task.stop()
           return null
-        } else if (taskInfo.state === RNBackgroundDownloader.TaskCompleted) {
+        } else if (taskInfo.state === NativeRNBackgroundDownloader.TaskCompleted) {
           if (taskInfo.bytesDownloaded === taskInfo.bytesTotal)
             task.state = 'DONE'
           else
@@ -110,7 +110,7 @@ export function completeHandler (jobId: string) {
     return
   }
 
-  return RNBackgroundDownloader.completeHandler(jobId)
+  return NativeRNBackgroundDownloader.completeHandler(jobId)
 }
 
 type DownloadOptions = {
@@ -147,7 +147,7 @@ export function download (options: DownloadOptions) {
   })
   tasksMap.set(options.id, task)
 
-  RNBackgroundDownloader.download({
+  NativeRNBackgroundDownloader.download({
     ...options,
     metadata: JSON.stringify(options.metadata),
     progressInterval: config.progressInterval,
@@ -157,7 +157,7 @@ export function download (options: DownloadOptions) {
 }
 
 export const directories = {
-  documents: RNBackgroundDownloader.documents,
+  documents: NativeRNBackgroundDownloader.documents,
 }
 
 export default {

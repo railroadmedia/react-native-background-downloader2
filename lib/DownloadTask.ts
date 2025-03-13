@@ -1,7 +1,5 @@
-import { NativeModules } from 'react-native'
+import NativeRNBackgroundDownloader from '../js/NativeRNBackgroundDownloader'
 import { TaskInfo } from '..'
-
-const { RNBackgroundDownloader } = NativeModules
 
 function validateHandler (handler) {
   const type = typeof handler
@@ -89,17 +87,17 @@ export default class DownloadTask {
 
   pause () {
     this.state = 'PAUSED'
-    RNBackgroundDownloader.pauseTask(this.id)
+    NativeRNBackgroundDownloader.pauseTask(this.id)
   }
 
   resume () {
     this.state = 'DOWNLOADING'
-    RNBackgroundDownloader.resumeTask(this.id)
+    NativeRNBackgroundDownloader.resumeTask(this.id)
   }
 
   stop () {
     this.state = 'STOPPED'
-    RNBackgroundDownloader.stopTask(this.id)
+    NativeRNBackgroundDownloader.stopTask(this.id)
   }
 
   tryParseJson (element) {

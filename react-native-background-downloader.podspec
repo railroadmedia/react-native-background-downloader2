@@ -10,9 +10,10 @@ Pod::Spec.new do |s|
   s.license      = package['license']
   s.platform     = :ios, '13.4'
   s.source       = { git: 'https://github.com/kesha-antonov/react-native-background-downloader.git', tag: 'master' }
-  s.source_files = 'ios/**/*.{h,m}'
+  s.source_files = 'ios/**/*.{h,m,mm,cpp}'
   s.requires_arc = true
 
-  s.dependency 'React-Core'
-  s.dependency 'MMKV', '~> 2.0.2'
+  # Use the React Native install_modules_dependencies helper to conditionally include
+  # dependencies based on whether the New Architecture is enabled
+  install_modules_dependencies(s)
 end
